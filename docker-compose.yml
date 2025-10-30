@@ -1,0 +1,50 @@
+services:
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+
+    networks:
+      - "netn8n"
+    environment:
+      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
+      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
+
+      - N8N_PROXY_HOPS=1
+      - N8N_PROTOCOL=https
+
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - N8N_DIAGNOSTICS_ENABLE=false
+      - NODE_ENV=production
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=internal
+
+      - DB_SQLITE_POOL_SIZE=5
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=true
+      - N8N_GIT_NODE_DISABLE_BARE_REPOS=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+
+    volumes:
+      - n8n_config:/home/node/.n8n
+      - ./local-files:/files
+
+ 
+  tunnel:
+    container_name: cloudflared-tunnel
+    image: cloudflare/cloudflared
+    restart: unless-stopped
+    networks:
+      - "netn8n"
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+
+
+volumes:
+  n8n_data:
+
+networks:
+  netn8n:
+    external: false
+    name: netn8n
